@@ -1,0 +1,724 @@
+<!doctype html>
+<html lang="id" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Peta Geografis Trenggalek</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+  <style>
+    body {
+      box-sizing: border-box;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    
+    .region {
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    
+    .region:hover {
+      filter: brightness(1.15);
+      transform: scale(1.02);
+      transform-origin: center;
+    }
+    
+    .region.active {
+      filter: brightness(1.2);
+      stroke-width: 3;
+    }
+    
+    .legend-item {
+      transition: transform 0.2s ease;
+    }
+    
+    .legend-item:hover {
+      transform: translateX(5px);
+    }
+    
+    .info-card {
+      animation: slideIn 0.3s ease;
+    }
+    
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .pulse-dot {
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.7; transform: scale(1.1); }
+    }
+    
+    .tooltip {
+      position: absolute;
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      pointer-events: none;
+      z-index: 100;
+      white-space: nowrap;
+    }
+    
+    .layer-btn {
+      transition: all 0.2s ease;
+    }
+    
+    .layer-btn.active {
+      transform: scale(1.05);
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="h-full bg-gradient-to-br from-emerald-900 via-teal-800 to-cyan-900 overflow-auto">
+  <div id="app-container" class="h-full w-full p-4 md:p-6"><!-- Header -->
+   <header class="text-center mb-4">
+    <h1 id="map-title" class="text-2xl md:text-3xl font-bold text-white drop-shadow-lg">🗺️ Peta Geografis Kabupaten Trenggalek</h1>
+    <p class="text-emerald-200 text-sm md:text-base mt-1">Provinsi Jawa Timur • Simulasi Interaktif untuk Pembelajaran</p>
+   </header>
+   <div class="flex flex-col lg:flex-row gap-4 h-auto"><!-- Left Panel - Map -->
+    <div class="lg:w-2/3 bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20"><!-- Layer Controls -->
+     <div class="flex flex-wrap gap-2 mb-3"><button onclick="toggleLayer('topography')" id="btn-topography" class="layer-btn active px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-medium hover:bg-emerald-600"> 🏔️ Topografi </button> <button onclick="toggleLayer('rivers')" id="btn-rivers" class="layer-btn active px-3 py-1.5 bg-blue-500 text-white rounded-lg text-xs font-medium hover:bg-blue-600"> 🌊 Sungai </button> <button onclick="toggleLayer('cities')" id="btn-cities" class="layer-btn active px-3 py-1.5 bg-amber-500 text-white rounded-lg text-xs font-medium hover:bg-amber-600"> 🏘️ Kecamatan </button> <button onclick="toggleLayer('tourism')" id="btn-tourism" class="layer-btn px-3 py-1.5 bg-pink-500 text-white rounded-lg text-xs font-medium hover:bg-pink-600"> 🏖️ Wisata </button>
+     </div><!-- SVG Map -->
+     <div class="relative bg-gradient-to-b from-sky-100 to-sky-200 rounded-xl overflow-hidden" id="map-container">
+      <svg viewbox="0 0 800 500" class="w-full h-auto" id="trenggalek-map"><!-- Ocean Background --> <defs>
+        <lineargradient id="oceanGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+         <stop offset="0%" style="stop-color:#0ea5e9;stop-opacity:0.3" />
+         <stop offset="100%" style="stop-color:#0369a1;stop-opacity:0.6" />
+        </lineargradient>
+        <lineargradient id="mountainGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+         <stop offset="0%" style="stop-color:#166534" />
+         <stop offset="100%" style="stop-color:#14532d" />
+        </lineargradient>
+        <lineargradient id="hillGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+         <stop offset="0%" style="stop-color:#22c55e" />
+         <stop offset="100%" style="stop-color:#16a34a" />
+        </lineargradient>
+        <lineargradient id="lowlandGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+         <stop offset="0%" style="stop-color:#86efac" />
+         <stop offset="100%" style="stop-color:#4ade80" />
+        </lineargradient>
+        <pattern id="wavePattern" patternunits="userSpaceOnUse" width="20" height="10">
+         <path d="M0,5 Q5,0 10,5 T20,5" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1" />
+        </pattern>
+       </defs> <!-- Base Map Sketch --> <g id="base-sketch"><!-- Main outline of Trenggalek -->
+        <path d="M100,150 L50,200 L40,250 L50,300 L60,340 L80,360 L150,370 L250,375 L350,370 L450,375 L550,370 L650,375 L720,365 L750,350 L760,310 L750,250 L720,200 L680,160 L600,150 L550,140 L500,135 L450,130 L400,135 L350,140 L300,145 L250,150 L200,155 L150,152 Z" fill="none" stroke="#1e3a5f" stroke-width="3" stroke-dasharray="8,4" opacity="0.4" /> <!-- Grid lines -->
+        <g opacity="0.2">
+         <line x1="200" y1="100" x2="200" y2="380" stroke="#1e3a5f" stroke-width="1" stroke-dasharray="4,4" />
+         <line x1="300" y1="100" x2="300" y2="380" stroke="#1e3a5f" stroke-width="1" stroke-dasharray="4,4" />
+         <line x1="400" y1="100" x2="400" y2="380" stroke="#1e3a5f" stroke-width="1" stroke-dasharray="4,4" />
+         <line x1="500" y1="100" x2="500" y2="380" stroke="#1e3a5f" stroke-width="1" stroke-dasharray="4,4" />
+         <line x1="600" y1="100" x2="600" y2="380" stroke="#1e3a5f" stroke-width="1" stroke-dasharray="4,4" />
+         <line x1="700" y1="100" x2="700" y2="380" stroke="#1e3a5f" stroke-width="1" stroke-dasharray="4,4" />
+         <line x1="50" y1="150" x2="750" y2="150" stroke="#1e3a5f" stroke-width="1" stroke-dasharray="4,4" />
+         <line x1="50" y1="200" x2="750" y2="200" stroke="#1e3a5f" stroke-width="1" stroke-dasharray="4,4" />
+         <line x1="50" y1="250" x2="750" y2="250" stroke="#1e3a5f" stroke-width="1" stroke-dasharray="4,4" />
+         <line x1="50" y1="300" x2="750" y2="300" stroke="#1e3a5f" stroke-width="1" stroke-dasharray="4,4" />
+         <line x1="50" y1="350" x2="750" y2="350" stroke="#1e3a5f" stroke-width="1" stroke-dasharray="4,4" />
+        </g> <!-- Coastal sketch line -->
+        <path d="M80,360 Q150,365 250,368 Q350,362 450,368 Q550,363 650,370 Q710,365 750,358" fill="none" stroke="#0369a1" stroke-width="2" stroke-dasharray="6,3" opacity="0.5" /> <!-- Topographic contour lines sketch -->
+        <ellipse cx="400" cy="220" rx="200" ry="80" fill="none" stroke="#166534" stroke-width="1.5" stroke-dasharray="5,3" opacity="0.3" />
+        <ellipse cx="400" cy="220" rx="150" ry="60" fill="none" stroke="#166534" stroke-width="1.5" stroke-dasharray="5,3" opacity="0.3" />
+        <ellipse cx="400" cy="220" rx="100" ry="40" fill="none" stroke="#166534" stroke-width="1.5" stroke-dasharray="5,3" opacity="0.3" />
+        <ellipse cx="200" cy="200" rx="80" ry="50" fill="none" stroke="#166534" stroke-width="1.5" stroke-dasharray="5,3" opacity="0.3" />
+        <ellipse cx="550" cy="180" rx="70" ry="45" fill="none" stroke="#166534" stroke-width="1.5" stroke-dasharray="5,3" opacity="0.3" />
+       </g> <!-- Indian Ocean --> <rect x="0" y="380" width="800" height="120" fill="url(#oceanGrad)" /> <rect x="0" y="380" width="800" height="120" fill="url(#wavePattern)" /> <text x="400" y="450" text-anchor="middle" fill="white" font-size="16" font-weight="bold" opacity="0.8">
+        🌊 SAMUDRA HINDIA
+       </text> <!-- Main Island Shape (Trenggalek) --> <g id="topography-layer"><!-- Coastal/Lowland Areas -->
+        <path class="region" id="region-coastal" d="M50,350 Q100,360 200,355 Q300,350 400,360 Q500,355 600,365 Q700,360 750,350 L750,380 Q600,390 400,385 Q200,390 50,380 Z" fill="url(#lowlandGrad)" stroke="#15803d" stroke-width="2" onclick="showRegionInfo('coastal')" onmouseenter="showTooltip(event, 'Dataran Rendah Pesisir')" onmouseleave="hideTooltip()" /> <!-- Hills/Mid elevation -->
+        <path class="region" id="region-hills" d="M80,250 Q150,280 250,270 Q350,260 450,275 Q550,265 650,280 Q720,270 750,250 L750,350 Q650,360 450,355 Q250,360 50,350 L50,260 Z" fill="url(#hillGrad)" stroke="#166534" stroke-width="2" onclick="showRegionInfo('hills')" onmouseenter="showTooltip(event, 'Perbukitan')" onmouseleave="hideTooltip()" /> <!-- Mountain Areas -->
+        <path class="region" id="region-mountains" d="M100,150 L150,200 Q200,180 250,190 L300,160 Q350,140 400,150 L450,130 Q500,120 550,140 L600,150 Q650,160 700,145 L720,180 Q680,220 600,230 Q500,225 400,235 Q300,230 200,240 Q120,235 80,250 L100,150 Z" fill="url(#mountainGrad)" stroke="#14532d" stroke-width="2" onclick="showRegionInfo('mountains')" onmouseenter="showTooltip(event, 'Pegunungan')" onmouseleave="hideTooltip()" /> <!-- Mountain Peaks -->
+        <polygon points="400,90 420,140 380,140" fill="#0f4c2e" stroke="#0a3622" stroke-width="1" />
+        <polygon points="550,100 575,145 525,145" fill="#0f4c2e" stroke="#0a3622" stroke-width="1" />
+        <polygon points="250,110 275,160 225,160" fill="#0f4c2e" stroke="#0a3622" stroke-width="1" />
+       </g> <!-- Rivers Layer --> <g id="rivers-layer"><!-- Sungai Ngasinan -->
+        <path d="M300,130 Q320,180 310,220 Q290,270 280,320 Q270,360 260,390" fill="none" stroke="#0ea5e9" stroke-width="4" stroke-linecap="round" opacity="0.8" class="region" onclick="showRegionInfo('ngasinan')" onmouseenter="showTooltip(event, 'Sungai Ngasinan')" onmouseleave="hideTooltip()" /> <!-- Sungai Tawing -->
+        <path d="M500,140 Q480,190 490,240 Q510,290 520,340 Q530,370 540,395" fill="none" stroke="#0ea5e9" stroke-width="3.5" stroke-linecap="round" opacity="0.8" class="region" onclick="showRegionInfo('tawing')" onmouseenter="showTooltip(event, 'Sungai Tawing')" onmouseleave="hideTooltip()" /> <!-- Anak Sungai -->
+        <path d="M200,180 Q230,200 260,220" fill="none" stroke="#38bdf8" stroke-width="2" opacity="0.6" />
+        <path d="M380,160 Q360,200 340,230" fill="none" stroke="#38bdf8" stroke-width="2" opacity="0.6" />
+        <path d="M600,170 Q580,210 560,250" fill="none" stroke="#38bdf8" stroke-width="2" opacity="0.6" />
+       </g> <!-- Cities/Districts Layer --> <g id="cities-layer"><!-- Trenggalek (Ibu Kota) -->
+        <g class="region" onclick="showRegionInfo('trenggalek-city')" onmouseenter="showTooltip(event, 'Kec. Trenggalek (Ibu Kota)')" onmouseleave="hideTooltip()">
+         <circle cx="350" cy="280" r="12" fill="#fbbf24" stroke="#b45309" stroke-width="2" />
+         <circle cx="350" cy="280" r="6" fill="#b45309" />
+         <text x="350" y="305" text-anchor="middle" fill="#1e3a5f" font-size="11" font-weight="bold">
+          TRENGGALEK
+         </text>
+        </g> <!-- Kec. Gandusari -->
+        <g class="region" onclick="showRegionInfo('gandusari')" onmouseenter="showTooltip(event, 'Kec. Gandusari')" onmouseleave="hideTooltip()">
+         <circle cx="200" cy="200" r="8" fill="#fb923c" stroke="#c2410c" stroke-width="2" />
+         <text x="200" y="220" text-anchor="middle" fill="#1e3a5f" font-size="9" font-weight="600">
+          Gandusari
+         </text>
+        </g> <!-- Kec. Watulimo -->
+        <g class="region" onclick="showRegionInfo('watulimo')" onmouseenter="showTooltip(event, 'Kec. Watulimo')" onmouseleave="hideTooltip()">
+         <circle cx="600" cy="320" r="8" fill="#fb923c" stroke="#c2410c" stroke-width="2" />
+         <text x="600" y="340" text-anchor="middle" fill="#1e3a5f" font-size="9" font-weight="600">
+          Watulimo
+         </text>
+        </g> <!-- Kec. Kampak -->
+        <g class="region" onclick="showRegionInfo('kampak')" onmouseenter="showTooltip(event, 'Kec. Kampak')" onmouseleave="hideTooltip()">
+         <circle cx="450" cy="250" r="8" fill="#fb923c" stroke="#c2410c" stroke-width="2" />
+         <text x="450" y="270" text-anchor="middle" fill="#1e3a5f" font-size="9" font-weight="600">
+          Kampak
+         </text>
+        </g> <!-- Kec. Munjungan -->
+        <g class="region" onclick="showRegionInfo('munjungan')" onmouseenter="showTooltip(event, 'Kec. Munjungan')" onmouseleave="hideTooltip()">
+         <circle cx="700" cy="340" r="8" fill="#fb923c" stroke="#c2410c" stroke-width="2" />
+         <text x="700" y="360" text-anchor="middle" fill="#1e3a5f" font-size="9" font-weight="600">
+          Munjungan
+         </text>
+        </g> <!-- Kec. Panggul -->
+        <g class="region" onclick="showRegionInfo('panggul')" onmouseenter="showTooltip(event, 'Kec. Panggul')" onmouseleave="hideTooltip()">
+         <circle cx="150" cy="330" r="8" fill="#fb923c" stroke="#c2410c" stroke-width="2" />
+         <text x="150" y="350" text-anchor="middle" fill="#1e3a5f" font-size="9" font-weight="600">
+          Panggul
+         </text>
+        </g> <!-- Kec. Dongko -->
+        <g class="region" onclick="showRegionInfo('dongko')" onmouseenter="showTooltip(event, 'Kec. Dongko')" onmouseleave="hideTooltip()">
+         <circle cx="280" cy="310" r="8" fill="#fb923c" stroke="#c2410c" stroke-width="2" />
+         <text x="280" y="330" text-anchor="middle" fill="#1e3a5f" font-size="9" font-weight="600">
+          Dongko
+         </text>
+        </g> <!-- Kec. Pule -->
+        <g class="region" onclick="showRegionInfo('pule')" onmouseenter="showTooltip(event, 'Kec. Pule')" onmouseleave="hideTooltip()">
+         <circle cx="520" cy="190" r="8" fill="#fb923c" stroke="#c2410c" stroke-width="2" />
+         <text x="520" y="210" text-anchor="middle" fill="#1e3a5f" font-size="9" font-weight="600">
+          Pule
+         </text>
+        </g> <!-- Kec. Karangan -->
+        <g class="region" onclick="showRegionInfo('karangan')" onmouseenter="showTooltip(event, 'Kec. Karangan')" onmouseleave="hideTooltip()">
+         <circle cx="420" cy="320" r="8" fill="#fb923c" stroke="#c2410c" stroke-width="2" />
+         <text x="420" y="340" text-anchor="middle" fill="#1e3a5f" font-size="9" font-weight="600">
+          Karangan
+         </text>
+        </g> <!-- Kec. Pogalan -->
+        <g class="region" onclick="showRegionInfo('pogalan')" onmouseenter="showTooltip(event, 'Kec. Pogalan')" onmouseleave="hideTooltip()">
+         <circle cx="300" cy="240" r="8" fill="#fb923c" stroke="#c2410c" stroke-width="2" />
+         <text x="300" y="260" text-anchor="middle" fill="#1e3a5f" font-size="9" font-weight="600">
+          Pogalan
+         </text>
+        </g> <!-- Kec. Tugu -->
+        <g class="region" onclick="showRegionInfo('tugu')" onmouseenter="showTooltip(event, 'Kec. Tugu')" onmouseleave="hideTooltip()">
+         <circle cx="380" cy="220" r="8" fill="#fb923c" stroke="#c2410c" stroke-width="2" />
+         <text x="380" y="240" text-anchor="middle" fill="#1e3a5f" font-size="9" font-weight="600">
+          Tugu
+         </text>
+        </g> <!-- Kec. Durenan -->
+        <g class="region" onclick="showRegionInfo('durenan')" onmouseenter="showTooltip(event, 'Kec. Durenan')" onmouseleave="hideTooltip()">
+         <circle cx="550" cy="280" r="8" fill="#fb923c" stroke="#c2410c" stroke-width="2" />
+         <text x="550" y="300" text-anchor="middle" fill="#1e3a5f" font-size="9" font-weight="600">
+          Durenan
+         </text>
+        </g> <!-- Kec. Bendungan -->
+        <g class="region" onclick="showRegionInfo('bendungan')" onmouseenter="showTooltip(event, 'Kec. Bendungan')" onmouseleave="hideTooltip()">
+         <circle cx="180" cy="280" r="8" fill="#fb923c" stroke="#c2410c" stroke-width="2" />
+         <text x="180" y="300" text-anchor="middle" fill="#1e3a5f" font-size="9" font-weight="600">
+          Bendungan
+         </text>
+        </g> <!-- Kec. Suruh -->
+        <g class="region" onclick="showRegionInfo('suruh')" onmouseenter="showTooltip(event, 'Kec. Suruh')" onmouseleave="hideTooltip()">
+         <circle cx="620" cy="220" r="8" fill="#fb923c" stroke="#c2410c" stroke-width="2" />
+         <text x="620" y="240" text-anchor="middle" fill="#1e3a5f" font-size="9" font-weight="600">
+          Suruh
+         </text>
+        </g>
+       </g> <!-- Tourism Layer (hidden by default) --> <g id="tourism-layer" style="display: none;"><!-- Pantai Prigi -->
+        <g class="region pulse-dot" onclick="showRegionInfo('prigi')" onmouseenter="showTooltip(event, 'Pantai Prigi')" onmouseleave="hideTooltip()">
+         <circle cx="550" cy="365" r="10" fill="#ec4899" stroke="white" stroke-width="2" />
+         <text x="550" y="365" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="10">
+          🏖️
+         </text>
+        </g> <!-- Pantai Karanggongso -->
+        <g class="region pulse-dot" onclick="showRegionInfo('karanggongso')" onmouseenter="showTooltip(event, 'Pantai Karanggongso')" onmouseleave="hideTooltip()">
+         <circle cx="620" cy="370" r="10" fill="#ec4899" stroke="white" stroke-width="2" />
+         <text x="620" y="370" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="10">
+          🏖️
+         </text>
+        </g> <!-- Goa Lowo -->
+        <g class="region pulse-dot" onclick="showRegionInfo('goalowo')" onmouseenter="showTooltip(event, 'Goa Lowo')" onmouseleave="hideTooltip()">
+         <circle cx="380" cy="200" r="10" fill="#8b5cf6" stroke="white" stroke-width="2" />
+         <text x="380" y="200" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="10">
+          🦇
+         </text>
+        </g> <!-- Air Terjun Jurug -->
+        <g class="region pulse-dot" onclick="showRegionInfo('jurug')" onmouseenter="showTooltip(event, 'Air Terjun Jurug')" onmouseleave="hideTooltip()">
+         <circle cx="240" cy="180" r="10" fill="#06b6d4" stroke="white" stroke-width="2" />
+         <text x="240" y="180" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="10">
+          💧
+         </text>
+        </g>
+       </g> <!-- Compass Rose --> <g transform="translate(720, 60)">
+        <circle cx="0" cy="0" r="30" fill="white" opacity="0.9" stroke="#1e3a5f" stroke-width="2" />
+        <polygon points="0,-25 5,-5 -5,-5" fill="#dc2626" />
+        <polygon points="0,25 5,5 -5,5" fill="#1e3a5f" />
+        <polygon points="-25,0 -5,5 -5,-5" fill="#1e3a5f" />
+        <polygon points="25,0 5,5 5,-5" fill="#1e3a5f" />
+        <text x="0" y="-32" text-anchor="middle" fill="#dc2626" font-size="10" font-weight="bold">
+         U
+        </text>
+        <text x="0" y="42" text-anchor="middle" fill="#1e3a5f" font-size="8">
+         S
+        </text>
+        <text x="-35" y="4" text-anchor="middle" fill="#1e3a5f" font-size="8">
+         B
+        </text>
+        <text x="35" y="4" text-anchor="middle" fill="#1e3a5f" font-size="8">
+         T
+        </text>
+       </g> <!-- Scale Bar --> <g transform="translate(50, 470)">
+        <rect x="0" y="0" width="100" height="8" fill="white" stroke="#333" />
+        <rect x="0" y="0" width="50" height="8" fill="#333" />
+        <text x="0" y="20" fill="white" font-size="10">
+         0
+        </text>
+        <text x="50" y="20" fill="white" font-size="10">
+         10
+        </text>
+        <text x="100" y="20" fill="white" font-size="10">
+         20 km
+        </text>
+       </g> <!-- Border Labels --> <text x="50" y="100" fill="#1e3a5f" font-size="11" font-weight="600" opacity="0.7">
+        KAB. PONOROGO ↑
+       </text> <text x="650" y="100" fill="#1e3a5f" font-size="11" font-weight="600" opacity="0.7">
+        KAB. TULUNGAGUNG →
+       </text> <text x="50" y="200" fill="#1e3a5f" font-size="11" font-weight="600" opacity="0.7">
+        ← KAB. PACITAN
+       </text>
+      </svg><!-- Tooltip container -->
+      <div id="tooltip" class="tooltip" style="display: none;"></div>
+     </div><!-- Legend -->
+     <div class="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+      <div class="legend-item flex items-center gap-2 bg-white/20 rounded-lg px-2 py-1.5">
+       <div class="w-4 h-4 rounded" style="background: linear-gradient(#166534, #14532d)"></div><span class="text-white">Pegunungan (&gt;500m)</span>
+      </div>
+      <div class="legend-item flex items-center gap-2 bg-white/20 rounded-lg px-2 py-1.5">
+       <div class="w-4 h-4 rounded" style="background: linear-gradient(#22c55e, #16a34a)"></div><span class="text-white">Perbukitan (100-500m)</span>
+      </div>
+      <div class="legend-item flex items-center gap-2 bg-white/20 rounded-lg px-2 py-1.5">
+       <div class="w-4 h-4 rounded" style="background: linear-gradient(#86efac, #4ade80)"></div><span class="text-white">Dataran Rendah (&lt;100m)</span>
+      </div>
+      <div class="legend-item flex items-center gap-2 bg-white/20 rounded-lg px-2 py-1.5">
+       <div class="w-4 h-4 rounded bg-amber-400"></div><span class="text-white">Ibu Kota / Kecamatan</span>
+      </div>
+     </div>
+    </div><!-- Right Panel - Info -->
+    <div class="lg:w-1/3 space-y-4"><!-- Info Card -->
+     <div class="bg-white/95 backdrop-blur-sm rounded-2xl p-4 shadow-xl">
+      <h2 id="info-title" class="text-lg font-bold text-emerald-800 mb-3 flex items-center gap-2">📍 Informasi Wilayah</h2>
+      <div id="info-content" class="info-card">
+       <div class="text-center py-6 text-gray-500">
+        <div class="text-4xl mb-2">
+         👆
+        </div>
+        <p>Klik area pada peta untuk melihat informasi detail</p>
+       </div>
+      </div>
+     </div><!-- Quick Stats -->
+     <div class="bg-white/95 backdrop-blur-sm rounded-2xl p-4 shadow-xl">
+      <h3 class="text-sm font-bold text-emerald-800 mb-3">📊 Data Geografis</h3>
+      <div class="grid grid-cols-2 gap-3 text-xs">
+       <div class="bg-emerald-50 rounded-lg p-2.5 text-center">
+        <div class="text-emerald-600 font-bold text-lg">
+         1.261,40
+        </div>
+        <div class="text-gray-600">
+         km² Luas Wilayah
+        </div>
+       </div>
+       <div class="bg-blue-50 rounded-lg p-2.5 text-center">
+        <div class="text-blue-600 font-bold text-lg">
+         14
+        </div>
+        <div class="text-gray-600">
+         Kecamatan
+        </div>
+       </div>
+       <div class="bg-amber-50 rounded-lg p-2.5 text-center">
+        <div class="text-amber-600 font-bold text-lg">
+         2/3
+        </div>
+        <div class="text-gray-600">
+         Wilayah Pegunungan
+        </div>
+       </div>
+       <div class="bg-cyan-50 rounded-lg p-2.5 text-center">
+        <div class="text-cyan-600 font-bold text-lg">
+         96 km
+        </div>
+        <div class="text-gray-600">
+         Garis Pantai
+        </div>
+       </div>
+      </div>
+     </div><!-- Instructions -->
+     <div class="bg-gradient-to-r from-amber-400 to-orange-400 rounded-2xl p-4 shadow-xl">
+      <h3 class="text-sm font-bold text-amber-900 mb-2">💡 Petunjuk Simulasi</h3>
+      <ul class="text-xs text-amber-900 space-y-1">
+       <li>• Klik tombol layer untuk menampilkan/sembunyikan</li>
+       <li>• Arahkan kursor ke area untuk melihat nama</li>
+       <li>• Klik area untuk detail informasi geografis</li>
+       <li>• Aktifkan layer Wisata untuk lokasi pariwisata</li>
+      </ul>
+     </div>
+    </div>
+   </div>
+  </div>
+  <script>
+    const defaultConfig = {
+      map_title: "🗺️ Peta Geografis Kabupaten Trenggalek",
+      info_title: "📍 Informasi Wilayah",
+      primary_color: "#064e3b",
+      secondary_color: "#ffffff",
+      text_color: "#1e3a5f",
+      accent_color: "#fbbf24",
+      highlight_color: "#ec4899"
+    };
+    
+    const regionData = {
+      'mountains': {
+        title: '🏔️ Kawasan Pegunungan',
+        elevation: '500 - 1.200 mdpl',
+        description: 'Kawasan pegunungan Trenggalek merupakan bagian dari Pegunungan Selatan Jawa. Area ini meliputi sekitar 2/3 wilayah kabupaten.',
+        features: ['Hutan lindung', 'Perkebunan kopi & cengkeh', 'Sumber mata air', 'Habitat fauna endemik'],
+        climate: 'Sejuk, curah hujan tinggi'
+      },
+      'hills': {
+        title: '⛰️ Kawasan Perbukitan',
+        elevation: '100 - 500 mdpl',
+        description: 'Kawasan transisi antara pegunungan dan dataran rendah. Cocok untuk pertanian hortikultura dan perkebunan.',
+        features: ['Ladang pertanian', 'Kebun buah', 'Pemukiman penduduk', 'Jalan penghubung antar kecamatan'],
+        climate: 'Sedang, curah hujan menengah'
+      },
+      'coastal': {
+        title: '🏖️ Dataran Rendah Pesisir',
+        elevation: '0 - 100 mdpl',
+        description: 'Wilayah pesisir selatan yang berbatasan langsung dengan Samudra Hindia. Pusat kegiatan perikanan dan pariwisata pantai.',
+        features: ['Pelabuhan perikanan', 'Pantai wisata', 'Tambak udang', 'Hutan mangrove'],
+        climate: 'Tropis, angin laut kencang'
+      },
+      'ngasinan': {
+        title: '🌊 Sungai Ngasinan',
+        length: '± 45 km',
+        description: 'Sungai utama yang mengalir dari pegunungan utara menuju Samudra Hindia. Menjadi sumber irigasi utama pertanian.',
+        features: ['Irigasi persawahan', 'Pembangkit mikro-hidro', 'Habitat ikan air tawar', 'Wisata tubing'],
+        watershed: 'DAS Ngasinan'
+      },
+      'tawing': {
+        title: '🌊 Sungai Tawing',
+        length: '± 35 km',
+        description: 'Sungai kedua terbesar yang bermuara di Pantai Prigi. Mendukung ekosistem pesisir dan perikanan.',
+        features: ['Muara di Teluk Prigi', 'Ekosistem estuari', 'Jalur transportasi tradisional'],
+        watershed: 'DAS Tawing'
+      },
+      'trenggalek-city': {
+        title: '🏛️ Kecamatan Trenggalek',
+        status: 'Ibu Kota Kabupaten',
+        description: 'Pusat pemerintahan dan ekonomi Kabupaten Trenggalek. Terletak di lembah dengan akses strategis ke seluruh wilayah.',
+        features: ['Kantor pemerintahan', 'Pusat perdagangan', 'Fasilitas pendidikan lengkap', 'Terminal bis'],
+        population: '± 65.000 jiwa'
+      },
+      'gandusari': {
+        title: '🌿 Kecamatan Gandusari',
+        type: 'Kecamatan Pegunungan',
+        description: 'Kecamatan di wilayah utara dengan topografi pegunungan. Dikenal sebagai penghasil kopi dan cengkeh berkualitas.',
+        features: ['Perkebunan kopi arabika', 'Air terjun', 'Agrowisata', 'Hutan pinus'],
+        elevation: '400 - 900 mdpl'
+      },
+      'watulimo': {
+        title: '🐟 Kecamatan Watulimo',
+        type: 'Kecamatan Pesisir',
+        description: 'Kecamatan pesisir dengan Pelabuhan Perikanan Prigi sebagai pusat perikanan terbesar di pantai selatan Jawa Timur.',
+        features: ['Pelabuhan Prigi', 'TPI (Tempat Pelelangan Ikan)', 'Pantai wisata', 'Industri pengolahan ikan'],
+        speciality: 'Sentra perikanan'
+      },
+      'kampak': {
+        title: '🌾 Kecamatan Kampak',
+        type: 'Kecamatan Pertanian',
+        description: 'Kecamatan dengan lahan pertanian yang subur. Penghasil padi dan palawija untuk kebutuhan regional.',
+        features: ['Sawah irigasi teknis', 'Penggilingan padi', 'Pasar hasil bumi'],
+        elevation: '200 - 400 mdpl'
+      },
+      'munjungan': {
+        title: '🏝️ Kecamatan Munjungan',
+        type: 'Kecamatan Pesisir Timur',
+        description: 'Kecamatan paling timur dengan garis pantai terpanjang. Memiliki potensi wisata bahari yang belum banyak dikembangkan.',
+        features: ['Pantai perawan', 'Tebing karang', 'Spot diving', 'Hutan bakau'],
+        coastline: '± 25 km'
+      },
+      'panggul': {
+        title: '🌊 Kecamatan Panggul',
+        type: 'Kecamatan Pesisir Barat',
+        description: 'Kecamatan pesisir di ujung barat yang berbatasan dengan Kabupaten Pacitan. Terkenal dengan pantai-pantai indahnya.',
+        features: ['Pantai Konang', 'Pelabuhan perikanan rakyat', 'Kerajinan batik pesisir'],
+        border: 'Berbatasan dengan Pacitan'
+      },
+      'dongko': {
+        title: '🏡 Kecamatan Dongko',
+        type: 'Kecamatan Perbukitan',
+        description: 'Kecamatan dengan topografi berbukit yang menjadi jalur penghubung utara-selatan kabupaten.',
+        features: ['Pemukiman tradisional', 'Pertanian tumpang sari', 'Kerajinan anyaman'],
+        elevation: '300 - 600 mdpl'
+      },
+      'pule': {
+        title: '🌲 Kecamatan Pule',
+        type: 'Kecamatan Pegunungan',
+        description: 'Kecamatan di kawasan pegunungan dengan hutan lindung yang masih terjaga. Sumber mata air untuk kecamatan sekitar.',
+        features: ['Hutan lindung', 'Mata air pegunungan', 'Flora fauna langka', 'Trekking trail'],
+        elevation: '500 - 1.000 mdpl'
+      },
+      'karangan': {
+        title: '🌻 Kecamatan Karangan',
+        type: 'Kecamatan Transisi',
+        description: 'Kecamatan di wilayah tengah dengan karakteristik transisi antara perbukitan dan dataran rendah.',
+        features: ['Pertanian terpadu', 'Pasar tradisional', 'Kerajinan kayu'],
+        elevation: '150 - 350 mdpl'
+      },
+      'pogalan': {
+        title: '🌿 Kecamatan Pogalan',
+        type: 'Kecamatan Perbukitan',
+        description: 'Kecamatan dengan bentang alam perbukitan hijau. Terkenal dengan keindahan alamnya yang masih asri.',
+        features: ['Perbukitan hijau', 'Sungai jernih', 'Kampung wisata', 'Pertanian organik'],
+        elevation: '250 - 500 mdpl'
+      },
+      'tugu': {
+        title: '🏛️ Kecamatan Tugu',
+        type: 'Kecamatan Perbukitan',
+        description: 'Kecamatan strategis yang menjadi penghubung antara wilayah utara dan selatan Trenggalek.',
+        features: ['Jalur lintas utara-selatan', 'Pertanian tanaman keras', 'Sentra industri kecil', 'Pasar hewan'],
+        elevation: '200 - 450 mdpl'
+      },
+      'durenan': {
+        title: '🌾 Kecamatan Durenan',
+        type: 'Kecamatan Pertanian',
+        description: 'Kecamatan lumbung padi dengan sistem irigasi teknis yang baik. Menjadi sentra produksi pangan kabupaten.',
+        features: ['Sawah irigasi luas', 'Produksi padi unggul', 'Lumbung pangan', 'KUD aktif'],
+        elevation: '150 - 300 mdpl'
+      },
+      'bendungan': {
+        title: '💧 Kecamatan Bendungan',
+        type: 'Kecamatan Sumber Air',
+        description: 'Kecamatan yang memiliki bendungan dan waduk untuk irigasi. Menjadi sumber air bagi wilayah sekitar.',
+        features: ['Waduk irigasi', 'Perikanan air tawar', 'Wisata bendungan', 'Pertanian terintegrasi'],
+        elevation: '180 - 400 mdpl'
+      },
+      'suruh': {
+        title: '🌄 Kecamatan Suruh',
+        type: 'Kecamatan Perbukitan Timur',
+        description: 'Kecamatan di bagian timur dengan topografi berbukit dan berbatasan dengan Kabupaten Tulungagung.',
+        features: ['Perbatasan Tulungagung', 'Kebun tebu', 'Industri gula', 'Jalur perdagangan'],
+        elevation: '200 - 500 mdpl'
+      },
+      'prigi': {
+        title: '🏖️ Pantai Prigi',
+        type: 'Destinasi Wisata Utama',
+        description: 'Pantai legendaris dengan pelabuhan perikanan terbesar di pantai selatan Jawa Timur. Dikenal dengan festival Larung Sembonyo.',
+        features: ['Teluk terlindung', 'Pelabuhan ikan', 'Festival laut', 'Kuliner seafood'],
+        visitors: '± 500.000/tahun'
+      },
+      'karanggongso': {
+        title: '🏊 Pantai Karanggongso',
+        type: 'Pantai Wisata',
+        description: 'Pantai dengan pasir putih dan ombak tenang, cocok untuk berenang dan bermain air. Terletak dekat dengan Pantai Prigi.',
+        features: ['Pasir putih', 'Ombak tenang', 'Banana boat', 'Gazebo tepi pantai'],
+        facilities: 'Lengkap'
+      },
+      'goalowo': {
+        title: '🦇 Goa Lowo',
+        type: 'Wisata Alam',
+        description: 'Gua alam dengan koloni kelelawar terbesar di Jawa Timur. Memiliki stalaktit dan stalagmit yang indah.',
+        features: ['Koloni kelelawar', 'Stalaktit-stalagmit', 'Sungai bawah tanah', 'Eksplorasi gua'],
+        length: '± 1.800 meter'
+      },
+      'jurug': {
+        title: '💧 Air Terjun Jurug',
+        type: 'Wisata Air Terjun',
+        description: 'Air terjun di kawasan Gandusari dengan ketinggian ± 40 meter. Dikelilingi hutan pinus yang sejuk.',
+        features: ['Ketinggian 40m', 'Kolam alami', 'Hutan pinus', 'Camping ground'],
+        access: 'Trekking 30 menit'
+      }
+    };
+    
+    const layers = {
+      topography: true,
+      rivers: true,
+      cities: true,
+      tourism: false
+    };
+    
+    function toggleLayer(layerName) {
+      layers[layerName] = !layers[layerName];
+      const layerElement = document.getElementById(`${layerName}-layer`);
+      const btn = document.getElementById(`btn-${layerName}`);
+      
+      if (layerElement) {
+        layerElement.style.display = layers[layerName] ? 'block' : 'none';
+      }
+      
+      if (btn) {
+        btn.classList.toggle('active', layers[layerName]);
+        btn.style.opacity = layers[layerName] ? '1' : '0.6';
+      }
+    }
+    
+    function showRegionInfo(regionId) {
+      const data = regionData[regionId];
+      if (!data) return;
+      
+      const infoContent = document.getElementById('info-content');
+      let featuresHTML = '';
+      
+      if (data.features) {
+        featuresHTML = `
+          <div class="mt-3">
+            <h4 class="font-semibold text-emerald-700 text-sm mb-1.5">Karakteristik:</h4>
+            <ul class="space-y-1">
+              ${data.features.map(f => `<li class="flex items-start gap-2 text-sm"><span class="text-emerald-500">✓</span>${f}</li>`).join('')}
+            </ul>
+          </div>
+        `;
+      }
+      
+      let statsHTML = '';
+      const stats = [];
+      if (data.elevation) stats.push({ label: 'Ketinggian', value: data.elevation });
+      if (data.length) stats.push({ label: 'Panjang', value: data.length });
+      if (data.population) stats.push({ label: 'Penduduk', value: data.population });
+      if (data.coastline) stats.push({ label: 'Garis Pantai', value: data.coastline });
+      if (data.climate) stats.push({ label: 'Iklim', value: data.climate });
+      if (data.visitors) stats.push({ label: 'Pengunjung', value: data.visitors });
+      
+      if (stats.length > 0) {
+        statsHTML = `
+          <div class="grid grid-cols-2 gap-2 mt-3">
+            ${stats.map(s => `
+              <div class="bg-emerald-50 rounded-lg p-2 text-center">
+                <div class="text-xs text-gray-500">${s.label}</div>
+                <div class="font-semibold text-emerald-700 text-sm">${s.value}</div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+      
+      infoContent.innerHTML = `
+        <div class="info-card">
+          <h3 class="text-lg font-bold text-emerald-800">${data.title}</h3>
+          ${data.status ? `<span class="inline-block px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-medium mt-1">${data.status}</span>` : ''}
+          ${data.type ? `<span class="inline-block px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium mt-1">${data.type}</span>` : ''}
+          <p class="text-gray-600 mt-2 text-sm leading-relaxed">${data.description}</p>
+          ${statsHTML}
+          ${featuresHTML}
+        </div>
+      `;
+      
+      document.querySelectorAll('.region').forEach(r => r.classList.remove('active'));
+      event.target.closest('.region')?.classList.add('active');
+    }
+    
+    function showTooltip(event, text) {
+      const tooltip = document.getElementById('tooltip');
+      tooltip.textContent = text;
+      tooltip.style.display = 'block';
+      
+      const rect = document.getElementById('map-container').getBoundingClientRect();
+      const x = event.clientX - rect.left + 10;
+      const y = event.clientY - rect.top - 30;
+      
+      tooltip.style.left = x + 'px';
+      tooltip.style.top = y + 'px';
+    }
+    
+    function hideTooltip() {
+      document.getElementById('tooltip').style.display = 'none';
+    }
+    
+    async function onConfigChange(config) {
+      const mapTitle = document.getElementById('map-title');
+      const infoTitle = document.getElementById('info-title');
+      
+      if (mapTitle) {
+        mapTitle.textContent = config.map_title || defaultConfig.map_title;
+      }
+      if (infoTitle) {
+        infoTitle.textContent = config.info_title || defaultConfig.info_title;
+      }
+    }
+    
+    function mapToCapabilities(config) {
+      return {
+        recolorables: [
+          {
+            get: () => config.primary_color || defaultConfig.primary_color,
+            set: (value) => {
+              config.primary_color = value;
+              window.elementSdk.setConfig({ primary_color: value });
+            }
+          },
+          {
+            get: () => config.secondary_color || defaultConfig.secondary_color,
+            set: (value) => {
+              config.secondary_color = value;
+              window.elementSdk.setConfig({ secondary_color: value });
+            }
+          },
+          {
+            get: () => config.text_color || defaultConfig.text_color,
+            set: (value) => {
+              config.text_color = value;
+              window.elementSdk.setConfig({ text_color: value });
+            }
+          },
+          {
+            get: () => config.accent_color || defaultConfig.accent_color,
+            set: (value) => {
+              config.accent_color = value;
+              window.elementSdk.setConfig({ accent_color: value });
+            }
+          },
+          {
+            get: () => config.highlight_color || defaultConfig.highlight_color,
+            set: (value) => {
+              config.highlight_color = value;
+              window.elementSdk.setConfig({ highlight_color: value });
+            }
+          }
+        ],
+        borderables: [],
+        fontEditable: undefined,
+        fontSizeable: undefined
+      };
+    }
+    
+    function mapToEditPanelValues(config) {
+      return new Map([
+        ["map_title", config.map_title || defaultConfig.map_title],
+        ["info_title", config.info_title || defaultConfig.info_title]
+      ]);
+    }
+    
+    if (window.elementSdk) {
+      window.elementSdk.init({
+        defaultConfig,
+        onConfigChange,
+        mapToCapabilities,
+        mapToEditPanelValues
+      });
+    }
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9baf730c77378740',t:'MTc2NzkxNDY3Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
