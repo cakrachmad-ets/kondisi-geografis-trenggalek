@@ -6,6 +6,7 @@
   <title>Peta Geografis Trenggalek</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="/_sdk/element_sdk.js"></script>
+  <script src="/_sdk/data_sdk.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
   <style>
     body {
@@ -82,10 +83,11 @@
     }
   </style>
   <style>@view-transition { navigation: auto; }</style>
-  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
  </head>
- <body class="h-full bg-gradient-to-br from-emerald-900 via-teal-800 to-cyan-900 overflow-auto">
-  <div id="app-container" class="h-full w-full p-4 md:p-6"><!-- Header -->
+ <body class="h-full bg-gradient-to-br from-emerald-900 via-teal-800 to-cyan-900 overflow-auto"><!-- Mode Selector (Top Right) -->
+  <div class="fixed top-4 right-4 z-50 flex gap-2"><button onclick="switchMode('map')" id="btn-mode-map" class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 shadow-lg"> 🗺️ Peta </button> <button onclick="switchMode('soal')" id="btn-mode-soal" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 shadow-lg"> 📝 Soal Pengayaan </button> <button onclick="switchMode('penilaian')" id="btn-mode-penilaian" class="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 shadow-lg"> 👨‍🏫 Penilaian Guru </button>
+  </div><!-- Map Mode -->
+  <div id="mode-map" class="h-full w-full p-4 md:p-6"><!-- Header -->
    <header class="text-center mb-4">
     <h1 id="map-title" class="text-2xl md:text-3xl font-bold text-white drop-shadow-lg">🗺️ Peta Geografis Kabupaten Trenggalek</h1>
     <p class="text-emerald-200 text-sm md:text-base mt-1">Provinsi Jawa Timur • Simulasi Interaktif untuk Pembelajaran</p>
@@ -377,6 +379,67 @@
      </div>
     </div>
    </div>
+  </div><!-- Soal Pengayaan Mode -->
+  <div id="mode-soal" class="h-full w-full p-4 md:p-6 pt-20" style="display: none;">
+   <div class="max-w-4xl mx-auto">
+    <header class="text-center mb-6">
+     <h1 class="text-3xl font-bold text-white drop-shadow-lg">📝 Soal Pengayaan Geografi</h1>
+     <p class="text-emerald-200 mt-2">Jawablah pertanyaan berdasarkan pengamatan lingkungan sekitarmu</p>
+    </header>
+    <div class="bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-xl">
+     <form id="form-pengayaan" onsubmit="submitJawaban(event)"><!-- Data Siswa -->
+      <div class="mb-6 p-4 bg-blue-50 rounded-xl">
+       <h3 class="text-lg font-bold text-blue-800 mb-4">📋 Data Siswa</h3>
+       <div class="space-y-3">
+        <div><label for="nama" class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label> <input type="text" id="nama" name="nama" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Masukkan nama lengkap">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+         <div><label for="no_absen" class="block text-sm font-medium text-gray-700 mb-1">No. Absen</label> <input type="text" id="no_absen" name="no_absen" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="No. absen">
+         </div>
+         <div><label for="kelas" class="block text-sm font-medium text-gray-700 mb-1">Kelas</label> <input type="text" id="kelas" name="kelas" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Contoh: X IPS 1">
+         </div>
+        </div>
+       </div>
+      </div><!-- Soal 1 -->
+      <div class="mb-6 p-4 bg-emerald-50 rounded-xl">
+       <h4 class="font-bold text-emerald-800 mb-2">Soal 1: Arsitektur &amp; Iklim Lokal</h4>
+       <p class="text-gray-700 text-sm mb-3 leading-relaxed">Perhatikan rumah-rumah tua (bukan bangunan modern baru) di sekitarmu. Apakah kebanyakan memiliki ventilasi udara yang besar atau justru tertutup rapat? Hubungkan pengamatanmu dengan suhu rata-rata di kecamatanmu saat malam hari dibandingkan dengan suhu di pusat kota Trenggalek. Mengapa arsitektur lokalnya demikian?</p><textarea id="jawaban_1" name="jawaban_1" required rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent" placeholder="Tuliskan pengamatanmu..."></textarea>
+      </div><!-- Soal 2 -->
+      <div class="mb-6 p-4 bg-amber-50 rounded-xl">
+       <h4 class="font-bold text-amber-800 mb-2">Soal 2: Topografi &amp; Fisika Kendaraan</h4>
+       <p class="text-gray-700 text-sm mb-3 leading-relaxed">Ingatlah perjalananmu dari rumah menuju sekolah. Identifikasi satu tanjakan yang paling curam. Jika ada truk bermuatan berat lewat di sana, mengapa mereka harus menggunakan gigi rendah (suara mesin meraung)? Jelaskan hubungannya dengan gaya gravitasi dan kemiringan lereng di daerahmu.</p><textarea id="jawaban_2" name="jawaban_2" required rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent" placeholder="Tuliskan pengamatanmu..."></textarea>
+      </div><!-- Soal 3 -->
+      <div class="mb-6 p-4 bg-blue-50 rounded-xl">
+       <h4 class="font-bold text-blue-800 mb-2">Soal 3: Dampak Sosial Pembangunan Infrastruktur</h4>
+       <p class="text-gray-700 text-sm mb-3 leading-relaxed">Sejak Jalur Lintas Selatan (JLS) dibuka melintasi kecamatanmu, amati perubahan jenis mata pencaharian tetanggamu. Apakah ada yang beralih dari nelayan/petani menjadi pedagang jasa wisata? Menurutmu, apakah perubahan bentang alam (pembangunan jalan) selalu membawa dampak positif bagi kondisi sosial warga asli? Berikan satu contoh nyata yang kamu lihat.</p><textarea id="jawaban_3" name="jawaban_3" required rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Tuliskan pengamatanmu..."></textarea>
+      </div><!-- Soal 4 -->
+      <div class="mb-6 p-4 bg-red-50 rounded-xl">
+       <h4 class="font-bold text-red-800 mb-2">Soal 4: Penyerapan Kalor &amp; Urban Heat Island</h4>
+       <p class="text-gray-700 text-sm mb-3 leading-relaxed">Bandingkan rasanya berdiri di tengah Alun-Alun (atau jalan aspal) saat siang hari dengan berdiri di bawah pohon trembesi di pinggir jalan. Mengapa suhu di area yang banyak beton/aspal terasa jauh lebih panas menyengat? Jelaskan konsep 'penyerapan kalor' pada aspal dibandingkan tanah berumput.</p><textarea id="jawaban_4" name="jawaban_4" required rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent" placeholder="Tuliskan pengamatanmu..."></textarea>
+      </div><!-- Soal 5 -->
+      <div class="mb-6 p-4 bg-purple-50 rounded-xl">
+       <h4 class="font-bold text-purple-800 mb-2">Soal 5: Interdependensi Ekonomi Regional</h4>
+       <p class="text-gray-700 text-sm mb-3 leading-relaxed">Jika kamu tinggal di Dongko (penghasil ketela) dan temanmu tinggal di Prigi (penghasil ikan), jelaskan bagaimana geografis tempat tinggal kalian saling melengkapi untuk menciptakan ekonomi Trenggalek? Apa yang terjadi jika jalan penghubung kedua kecamatan itu putus?</p><textarea id="jawaban_5" name="jawaban_5" required rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="Tuliskan pengamatanmu..."></textarea>
+      </div>
+      <div class="flex justify-end"><button type="submit" id="btn-submit" class="px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-lg font-semibold hover:from-emerald-700 hover:to-teal-700 shadow-lg transition-all"> ✅ Kirim Jawaban </button>
+      </div>
+      <div id="submit-message" class="mt-4 p-4 rounded-lg" style="display: none;"></div>
+     </form>
+    </div>
+   </div>
+  </div><!-- Penilaian Guru Mode -->
+  <div id="mode-penilaian" class="h-full w-full p-4 md:p-6 pt-20" style="display: none;">
+   <div class="max-w-7xl mx-auto">
+    <header class="text-center mb-6">
+     <h1 class="text-3xl font-bold text-white drop-shadow-lg">👨‍🏫 Penilaian Jawaban Siswa</h1>
+     <p class="text-emerald-200 mt-2">Berikan nilai dan catatan untuk setiap jawaban siswa</p>
+    </header>
+    <div id="loading-penilaian" class="text-center py-12">
+     <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+     <p class="text-white mt-4">Memuat data siswa...</p>
+    </div>
+    <div id="daftar-jawaban" class="space-y-4"></div>
+   </div>
   </div>
   <script>
     const defaultConfig = {
@@ -388,6 +451,269 @@
       accent_color: "#fbbf24",
       highlight_color: "#ec4899"
     };
+    
+    let allJawaban = [];
+    let currentMode = 'map';
+    
+    // Data SDK Handler
+    const dataHandler = {
+      onDataChanged(data) {
+        allJawaban = data;
+        if (currentMode === 'penilaian') {
+          renderDaftarJawaban();
+        }
+      }
+    };
+    
+    // Initialize Data SDK
+    async function initDataSDK() {
+      const result = await window.dataSdk.init(dataHandler);
+      if (!result.isOk) {
+        console.error("Failed to initialize Data SDK");
+      }
+    }
+    
+    // Switch Mode
+    function switchMode(mode) {
+      currentMode = mode;
+      document.getElementById('mode-map').style.display = mode === 'map' ? 'block' : 'none';
+      document.getElementById('mode-soal').style.display = mode === 'soal' ? 'block' : 'none';
+      document.getElementById('mode-penilaian').style.display = mode === 'penilaian' ? 'block' : 'none';
+      
+      // Update button styles
+      ['map', 'soal', 'penilaian'].forEach(m => {
+        const btn = document.getElementById(`btn-mode-${m}`);
+        if (m === mode) {
+          btn.style.opacity = '1';
+          btn.style.transform = 'scale(1.05)';
+        } else {
+          btn.style.opacity = '0.7';
+          btn.style.transform = 'scale(1)';
+        }
+      });
+      
+      if (mode === 'penilaian') {
+        renderDaftarJawaban();
+      }
+      
+      if (mode === 'soal') {
+        document.getElementById('form-pengayaan').reset();
+        document.getElementById('submit-message').style.display = 'none';
+      }
+    }
+    
+    // Submit Jawaban
+    async function submitJawaban(event) {
+      event.preventDefault();
+      
+      const btnSubmit = document.getElementById('btn-submit');
+      const messageDiv = document.getElementById('submit-message');
+      
+      btnSubmit.disabled = true;
+      btnSubmit.innerHTML = '⏳ Mengirim...';
+      
+      const formData = new FormData(event.target);
+      const jawabanData = {
+        nama: formData.get('nama'),
+        no_absen: formData.get('no_absen'),
+        kelas: formData.get('kelas'),
+        jawaban_1: formData.get('jawaban_1'),
+        jawaban_2: formData.get('jawaban_2'),
+        jawaban_3: formData.get('jawaban_3'),
+        jawaban_4: formData.get('jawaban_4'),
+        jawaban_5: formData.get('jawaban_5'),
+        nilai: '',
+        catatan_guru: '',
+        timestamp: new Date().toISOString()
+      };
+      
+      const result = await window.dataSdk.create(jawabanData);
+      
+      if (result.isOk) {
+        messageDiv.style.display = 'block';
+        messageDiv.className = 'mt-4 p-4 rounded-lg bg-green-100 border border-green-400 text-green-700';
+        messageDiv.innerHTML = '✅ Jawaban berhasil dikirim! Terima kasih atas partisipasimu.';
+        event.target.reset();
+      } else {
+        messageDiv.style.display = 'block';
+        messageDiv.className = 'mt-4 p-4 rounded-lg bg-red-100 border border-red-400 text-red-700';
+        messageDiv.innerHTML = '❌ Gagal mengirim jawaban. Silakan coba lagi.';
+      }
+      
+      btnSubmit.disabled = false;
+      btnSubmit.innerHTML = '✅ Kirim Jawaban';
+    }
+    
+    // Render Daftar Jawaban untuk Guru
+    function renderDaftarJawaban() {
+      const loading = document.getElementById('loading-penilaian');
+      const container = document.getElementById('daftar-jawaban');
+      
+      loading.style.display = 'none';
+      
+      if (allJawaban.length === 0) {
+        container.innerHTML = `
+          <div class="bg-white/95 backdrop-blur-sm rounded-2xl p-8 text-center shadow-xl">
+            <div class="text-6xl mb-4">📭</div>
+            <p class="text-gray-600 text-lg">Belum ada jawaban siswa yang masuk</p>
+          </div>
+        `;
+        return;
+      }
+      
+      container.innerHTML = allJawaban.map(jawaban => `
+        <div class="bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-xl">
+          <div class="flex justify-between items-start mb-4">
+            <div>
+              <h3 class="text-xl font-bold text-emerald-800">${jawaban.nama}</h3>
+              <p class="text-gray-600 text-sm">Kelas ${jawaban.kelas} | No. Absen: ${jawaban.no_absen}</p>
+              <p class="text-gray-500 text-xs mt-1">📅 ${new Date(jawaban.timestamp).toLocaleString('id-ID')}</p>
+            </div>
+            ${jawaban.nilai ? `<span class="px-4 py-2 bg-emerald-100 text-emerald-700 rounded-lg font-bold text-lg">Nilai: ${jawaban.nilai}</span>` : '<span class="px-4 py-2 bg-gray-100 text-gray-500 rounded-lg text-sm">Belum Dinilai</span>'}
+          </div>
+          
+          <div class="space-y-4 mb-4">
+            <div class="p-3 bg-emerald-50 rounded-lg">
+              <h4 class="font-semibold text-emerald-800 text-sm mb-1">Soal 1: Arsitektur & Iklim Lokal</h4>
+              <p class="text-gray-700 text-sm">${jawaban.jawaban_1}</p>
+            </div>
+            <div class="p-3 bg-amber-50 rounded-lg">
+              <h4 class="font-semibold text-amber-800 text-sm mb-1">Soal 2: Topografi & Fisika Kendaraan</h4>
+              <p class="text-gray-700 text-sm">${jawaban.jawaban_2}</p>
+            </div>
+            <div class="p-3 bg-blue-50 rounded-lg">
+              <h4 class="font-semibold text-blue-800 text-sm mb-1">Soal 3: Dampak Sosial Pembangunan Infrastruktur</h4>
+              <p class="text-gray-700 text-sm">${jawaban.jawaban_3}</p>
+            </div>
+            <div class="p-3 bg-red-50 rounded-lg">
+              <h4 class="font-semibold text-red-800 text-sm mb-1">Soal 4: Penyerapan Kalor & Urban Heat Island</h4>
+              <p class="text-gray-700 text-sm">${jawaban.jawaban_4}</p>
+            </div>
+            <div class="p-3 bg-purple-50 rounded-lg">
+              <h4 class="font-semibold text-purple-800 text-sm mb-1">Soal 5: Interdependensi Ekonomi Regional</h4>
+              <p class="text-gray-700 text-sm">${jawaban.jawaban_5}</p>
+            </div>
+          </div>
+          
+          ${jawaban.catatan_guru ? `
+            <div class="p-3 bg-yellow-50 rounded-lg mb-4">
+              <h4 class="font-semibold text-yellow-800 text-sm mb-1">💬 Catatan Guru</h4>
+              <p class="text-gray-700 text-sm">${jawaban.catatan_guru}</p>
+            </div>
+          ` : ''}
+          
+          <div class="border-t pt-4">
+            <h4 class="font-semibold text-purple-800 mb-3">👨‍🏫 Penilaian</h4>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Nilai</label>
+                <input type="text" id="nilai-${jawaban.__backendId}" value="${jawaban.nilai || ''}" 
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  placeholder="0-100">
+              </div>
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Catatan untuk Siswa</label>
+                <input type="text" id="catatan-${jawaban.__backendId}" value="${jawaban.catatan_guru || ''}" 
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  placeholder="Berikan catatan atau saran...">
+              </div>
+            </div>
+            <div class="flex justify-end gap-2 mt-3">
+              <button onclick="simpanPenilaian('${jawaban.__backendId}')" 
+                class="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700">
+                💾 Simpan Penilaian
+              </button>
+              <button onclick="hapusJawaban('${jawaban.__backendId}')" 
+                class="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700">
+                🗑️ Hapus
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    // Simpan Penilaian
+    async function simpanPenilaian(backendId) {
+      const jawaban = allJawaban.find(j => j.__backendId === backendId);
+      if (!jawaban) return;
+      
+      const nilaiInput = document.getElementById(`nilai-${backendId}`);
+      const catatanInput = document.getElementById(`catatan-${backendId}`);
+      
+      jawaban.nilai = nilaiInput.value;
+      jawaban.catatan_guru = catatanInput.value;
+      
+      const result = await window.dataSdk.update(jawaban);
+      
+      if (result.isOk) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'fixed top-24 right-4 z-50 bg-green-500 text-white px-6 py-3 rounded-lg shadow-xl';
+        messageDiv.textContent = '✅ Penilaian berhasil disimpan!';
+        document.body.appendChild(messageDiv);
+        setTimeout(() => messageDiv.remove(), 3000);
+      } else {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'fixed top-24 right-4 z-50 bg-red-500 text-white px-6 py-3 rounded-lg shadow-xl';
+        messageDiv.textContent = '❌ Gagal menyimpan penilaian';
+        document.body.appendChild(messageDiv);
+        setTimeout(() => messageDiv.remove(), 3000);
+      }
+    }
+    
+    // Hapus Jawaban
+    async function hapusJawaban(backendId) {
+      const jawaban = allJawaban.find(j => j.__backendId === backendId);
+      if (!jawaban) return;
+      
+      // Create custom confirmation
+      const confirmDiv = document.createElement('div');
+      confirmDiv.className = 'fixed inset-0 bg-black/50 z-50 flex items-center justify-center';
+      confirmDiv.innerHTML = `
+        <div class="bg-white rounded-2xl p-6 max-w-md mx-4 shadow-2xl">
+          <h3 class="text-xl font-bold text-red-800 mb-3">⚠️ Konfirmasi Hapus</h3>
+          <p class="text-gray-700 mb-4">Apakah Anda yakin ingin menghapus jawaban dari <strong>${jawaban.nama}</strong>?</p>
+          <p class="text-sm text-gray-500 mb-4">Tindakan ini tidak dapat dibatalkan.</p>
+          <div class="flex gap-3 justify-end">
+            <button onclick="this.closest('.fixed').remove()" 
+              class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">
+              Batal
+            </button>
+            <button onclick="confirmHapus('${backendId}'); this.closest('.fixed').remove();" 
+              class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+              Hapus
+            </button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(confirmDiv);
+    }
+    
+    async function confirmHapus(backendId) {
+      const jawaban = allJawaban.find(j => j.__backendId === backendId);
+      if (!jawaban) return;
+      
+      const result = await window.dataSdk.delete(jawaban);
+      
+      if (result.isOk) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'fixed top-24 right-4 z-50 bg-green-500 text-white px-6 py-3 rounded-lg shadow-xl';
+        messageDiv.textContent = '✅ Jawaban berhasil dihapus!';
+        document.body.appendChild(messageDiv);
+        setTimeout(() => messageDiv.remove(), 3000);
+      } else {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'fixed top-24 right-4 z-50 bg-red-500 text-white px-6 py-3 rounded-lg shadow-xl';
+        messageDiv.textContent = '❌ Gagal menghapus jawaban';
+        document.body.appendChild(messageDiv);
+        setTimeout(() => messageDiv.remove(), 3000);
+      }
+    }
+    
+    // Initialize
+    if (window.dataSdk) {
+      initDataSDK();
+    }
     
     const regionData = {
       'mountains': {
@@ -720,5 +1046,5 @@
       });
     }
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9baf730c77378740',t:'MTc2NzkxNDY3Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9bafc4ea35392652',t:'MTc2NzkxODAzMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
