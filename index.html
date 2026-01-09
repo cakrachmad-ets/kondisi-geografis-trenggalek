@@ -134,7 +134,7 @@
     <button onclick="switchMode('soal')" id="btn-mode-soal" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 shadow-lg transition-colors ring-2 ring-white/20"> 📝 Soal Pengayaan </button> 
     <button onclick="switchMode('nilai')" id="btn-mode-nilai" class="px-4 py-2 bg-yellow-600 text-white rounded-lg text-sm font-medium hover:bg-yellow-700 shadow-lg transition-colors ring-2 ring-white/20"> 🎓 Nilai Siswa </button>
     <button onclick="switchMode('penilaian')" id="btn-mode-penilaian" class="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 shadow-lg transition-colors ring-2 ring-white/20"> 👨‍🏫 Penilaian Guru </button>
-    <button onclick="refreshData()" class="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 shadow-lg transition-colors" title="Perbarui Data"> 🔄 Refresh </button>
+    <button onclick="refreshData()" id="btn-refresh" class="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 shadow-lg transition-colors" title="Perbarui Data"> 🔄 Refresh </button>
   </div>
 
   <!-- MODE: MAP -->
@@ -153,6 +153,7 @@
       </div>
       <div class="relative bg-gradient-to-b from-sky-100 to-sky-200 rounded-xl overflow-hidden shadow-inner" id="map-container">
       <svg viewBox="0 0 800 500" class="w-full h-auto" id="trenggalek-map">
+        <!-- Peta SVG -->
         <defs>
         <linearGradient id="oceanGrad" x1="0%" y1="0%" x2="0%" y2="100%">
           <stop offset="0%" style="stop-color:#0ea5e9;stop-opacity:0.3" />
@@ -666,6 +667,11 @@
       if(modeName === 'nilai') colorRing = 'ring-yellow-300';
       
       document.getElementById('btn-mode-' + modeName).classList.add('ring-4', colorRing);
+
+      // Auto Refresh Data saat masuk menu Nilai
+      if(modeName === 'nilai' || (modeName === 'penilaian' && !document.getElementById('guru-dashboard').classList.contains('hidden'))) {
+        refreshData();
+      }
     }
 
     // Toggle map layers
@@ -734,7 +740,7 @@
     // --- SOAL PENGAYAAN LOGIC ---
     
     // GANTI URL INI DENGAN URL WEB APP ANDA DARI GOOGLE APPS SCRIPT
-    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxjbAB-UGxmFfbA4ql7QNwC208F2Iq0jK5Wykg7xW8fgGBwk3BZy2_4K5nqi88n-EHiXg/exec';
+    const GOOGLE_SCRIPT_URL = 'PASTE_YOUR_WEB_APP_URL_HERE';
 
     function submitJawaban(e) {
       e.preventDefault();
@@ -751,6 +757,7 @@
       // Add timestamp and empty score
       data.timestamp = new Date().toLocaleString('id-ID');
       data.nilai = null; // Default null until graded
+      data.action = 'submit'; // Penanda untuk Server
       
       // 1. SIMPAN KE LOCALSTORAGE (Sebagai Backup & Tampilan Instan)
       let submissions = JSON.parse(localStorage.getItem('trenggalek_submissions') || '[]');
@@ -761,17 +768,13 @@
       if (GOOGLE_SCRIPT_URL !== 'PASTE_YOUR_WEB_APP_URL_HERE') {
         fetch(GOOGLE_SCRIPT_URL, {
           method: 'POST',
-          mode: 'no-cors', // Penting untuk menghindari error CORS di console browser
+          mode: 'no-cors',
           cache: 'no-cache',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Content-Type': 'application/json' },
           redirect: 'follow',
-          body: JSON.stringify(data) // Kirim data sebagai string JSON
+          body: JSON.stringify(data)
         })
         .then(response => {
-           // Karena mode 'no-cors', kita tidak bisa membaca response secara langsung
-           // Tapi jika tidak error, asumsi sukses
            alert(`Terima kasih, ${data.nama}! Jawabanmu telah tersimpan di Server & Lokal.`);
            e.target.reset();
            finishSubmit();
@@ -796,7 +799,7 @@
         
         // Switch back to map or refresh dashboard if logged in
         if (!document.getElementById('guru-dashboard').classList.contains('hidden')) {
-            renderDashboard();
+            renderDashboard(); // Refresh lokal saja
         }
       }
     }
@@ -836,7 +839,7 @@
       let html = '';
       results.reverse().forEach(sub => {
         let scoreBadge = '';
-        if (sub.nilai === null || sub.nilai === undefined) {
+        if (sub.nilai === null || sub.nilai === undefined || sub.nilai === "") {
           scoreBadge = `<span class="bg-gray-200 text-gray-600 px-3 py-1 rounded-full text-xs font-bold">⏳ Belum Dinilai</span>`;
         } else {
           const scoreColor = parseInt(sub.nilai) >= 75 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
@@ -878,8 +881,8 @@
         document.getElementById('login-panel').classList.add('hidden');
         document.getElementById('guru-dashboard').classList.remove('hidden');
         
-        // Load Data
-        renderDashboard();
+        // Load Data from Server to ensure fresh state
+        renderDashboard(true);
       } else {
         // Fail
         errorMsg.classList.remove('hidden');
@@ -900,22 +903,23 @@
     // Variabel global untuk menyimpan data sementara agar bisa diakses oleh viewDetail & gradeSubmission
     let currentSubmissionsData = [];
 
-    async function renderDashboard() {
+    async function renderDashboard(forceFetch = false) {
       const tbody = document.getElementById('submission-table-body');
-      tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-gray-400"><div class="loader"></div> Memuat data...</td></tr>';
+      
+      // Jika forceFetch, tampilkan loading. Jika tidak (hanya update lokal), jangan loading.
+      if(forceFetch) {
+        tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-gray-400"><div class="loader"></div> Sinkronisasi data...</td></tr>';
+      }
       
       let submissions = [];
 
-      // 1. Coba ambil dari Google Sheet (Jika URL valid)
-      if (GOOGLE_SCRIPT_URL !== 'PASTE_YOUR_WEB_APP_URL_HERE') {
+      // 1. Coba ambil dari Google Sheet (Jika URL valid & forceFetch)
+      if (forceFetch && GOOGLE_SCRIPT_URL !== 'PASTE_YOUR_WEB_APP_URL_HERE') {
         try {
            const response = await fetch(GOOGLE_SCRIPT_URL);
-           // Jika berhasil, parse JSON
            const data = await response.json();
            if(Array.isArray(data)) {
              submissions = data;
-             // Cache ke localStorage agar bisa dicari siswa secara offline/cepat
-             // Note: Ini akan menimpa data lokal dengan data server.
              localStorage.setItem('trenggalek_submissions', JSON.stringify(submissions));
            }
         } catch (e) {
@@ -938,14 +942,12 @@
 
       let html = '';
       // Show newest first
-      // Kita pakai index terbalik untuk referensi
       const reversedData = [...submissions].reverse();
       
       reversedData.forEach((sub, index) => {
-        // Index asli dalam array utama (untuk edit data)
         const originalIndex = submissions.length - 1 - index;
         
-        let scoreDisplay = sub.nilai ? `<span class="font-bold text-green-600">${sub.nilai}</span>` : `<span class="text-gray-400 text-xs italic">Belum dinilai</span>`;
+        let scoreDisplay = (sub.nilai && sub.nilai !== "") ? `<span class="font-bold text-green-600">${sub.nilai}</span>` : `<span class="text-gray-400 text-xs italic">Belum dinilai</span>`;
 
         html += `
           <tr class="hover:bg-gray-50 transition-colors">
@@ -1017,6 +1019,7 @@
       document.body.classList.remove('modal-active');
     }
 
+    // --- REVISI FUNGSI PEMBERIAN NILAI ---
     function gradeSubmission(originalIndex) {
       const data = currentSubmissionsData[originalIndex];
       
@@ -1024,37 +1027,86 @@
       let score = prompt(`Masukkan Nilai untuk ${data.nama} (0-100):`, currentScore);
       
       if (score !== null) {
-        // Validate score
         if (isNaN(score) || score < 0 || score > 100) {
           alert("Harap masukkan angka valid antara 0 - 100");
           return;
         }
         
-        // Update data in local array
+        // 1. UPDATE DATA LOKAL (Optimistic Update)
         currentSubmissionsData[originalIndex].nilai = score;
         localStorage.setItem('trenggalek_submissions', JSON.stringify(currentSubmissionsData));
         
-        // Refresh table display only
-        renderDashboard();
+        // 2. REFRESH TAMPILAN (Lokal Saja)
+        renderDashboard(false); 
         
-        // Note: We cannot easily update specific rows in Google Sheet without complex logic
-        // So we warn the user
-        alert("Nilai berhasil disimpan di database LOKAL.\n\nCatatan: Update nilai ke Google Sheet memerlukan penyesuaian script tambahan.");
+        // 3. KIRIM UPDATE KE SERVER
+        if (GOOGLE_SCRIPT_URL !== 'PASTE_YOUR_WEB_APP_URL_HERE') {
+          // Payload Update
+          const updateData = {
+            action: 'grade',
+            nama: data.nama,
+            kelas: data.kelas,
+            no_absen: data.no_absen,
+            nilai: score
+          };
+
+          fetch(GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updateData)
+          })
+          .then(() => {
+             // Opsional: notif sukses kecil atau log
+             console.log("Nilai terkirim ke server");
+          })
+          .catch(e => {
+             alert("Gagal sinkronisasi nilai ke server. Cek koneksi.");
+          });
+        } else {
+          alert("Nilai tersimpan LOKAL.\nURL Script belum disetting, jadi nilai tidak terkirim ke server.");
+        }
       }
     }
 
-    // FUNGSI REFRESH DATA
-    function refreshData() {
-        if (!document.getElementById('guru-dashboard').classList.contains('hidden')) {
-            renderDashboard().then(() => alert('Data Dashboard diperbarui.'));
-        } else if (document.getElementById('mode-nilai').style.display !== 'none') {
-            // Re-fetch data implicitly by re-rendering dashboard logic or just LocalStorage check
-            renderDashboard().then(() => {
-              searchNilai();
-              alert('Data Nilai diperbarui.');
-            });
-        } else {
-           alert('Refresh dilakukan. Data terbaru diambil.');
+    // FUNGSI REFRESH DATA (DIPERBAIKI)
+    async function refreshData() {
+        const btn = document.querySelector('button[title="Perbarui Data"]');
+        const originalContent = btn.innerHTML;
+        
+        // 1. Visual Loading
+        btn.innerHTML = '⏳ Loading...';
+        btn.disabled = true;
+        btn.classList.add('opacity-75', 'cursor-not-allowed');
+
+        try {
+            // 2. Cek Mode
+            if (GOOGLE_SCRIPT_URL.includes('PASTE_YOUR_WEB_APP_URL_HERE')) {
+                alert('PERINGATAN: URL Google Script belum disetting.\nSistem berjalan dalam Mode Offline (Data Lokal Browser).\nData dari siswa lain tidak akan masuk.');
+            }
+
+            // 3. Tarik Data (Force Fetch)
+            await renderDashboard(true);
+
+            // 4. Update UI Tambahan jika sedang di halaman Nilai
+            if (document.getElementById('mode-nilai').style.display !== 'none') {
+                searchNilai();
+            }
+
+            // 5. Notifikasi Sukses (Singkat)
+            // Hanya alert jika tidak di dashboard guru (karena dashboard punya spinner sendiri di tabel)
+            if (document.getElementById('guru-dashboard').classList.contains('hidden')) {
+               alert('Data berhasil diperbarui!');
+            }
+
+        } catch (error) {
+            console.error(error);
+            alert('Gagal memperbarui data. Cek koneksi internet.');
+        } finally {
+            // 6. Reset Tombol
+            btn.innerHTML = originalContent;
+            btn.disabled = false;
+            btn.classList.remove('opacity-75', 'cursor-not-allowed');
         }
     }
 
